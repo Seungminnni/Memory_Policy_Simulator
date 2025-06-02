@@ -147,15 +147,14 @@
             // 
             // comboBox1
             // 
-            this.comboBox1.FormattingEnabled = true;
-            this.comboBox1.Items.AddRange(new object[] {
+            this.comboBox1.FormattingEnabled = true;            this.comboBox1.Items.AddRange(new object[] {
             "FIFO",
             "LRU"});
             this.comboBox1.Location = new System.Drawing.Point(12, 34);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(121, 32);
             this.comboBox1.TabIndex = 8;
-            this.comboBox1.Text = "LRU";
+            this.comboBox1.Text = "FIFO";
             // 
             // label1
             // 
