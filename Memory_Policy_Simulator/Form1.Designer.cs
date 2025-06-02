@@ -146,10 +146,11 @@
             this.btnSave.Click += new System.EventHandler(this.btnSave_Click);
             // 
             // comboBox1
-            // 
-            this.comboBox1.FormattingEnabled = true;            this.comboBox1.Items.AddRange(new object[] {
+            //            this.comboBox1.FormattingEnabled = true;            
+            this.comboBox1.Items.AddRange(new object[] {
             "FIFO",
-            "LRU"});
+            "LRU",
+            "LFU"});
             this.comboBox1.Location = new System.Drawing.Point(12, 34);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(121, 32);

@@ -127,11 +127,14 @@ namespace Memory_Policy_Simulator
                 string data = this.tbQueryString.Text;
                 int windowSize = int.Parse(this.tbWindowSize.Text);
 
-                /* initalize */
-                // 선택된 정책 확인 (FIFO / LRU)
-                Core.POLICY selectedPolicy = comboBox1.Text == "FIFO" 
-                    ? Core.POLICY.FIFO 
-                    : Core.POLICY.LRU;
+                /* initalize */                // 선택된 정책 확인 (FIFO / LRU / LFU)
+                Core.POLICY selectedPolicy;
+                if (comboBox1.Text == "FIFO")
+                    selectedPolicy = Core.POLICY.FIFO;
+                else if (comboBox1.Text == "LRU")
+                    selectedPolicy = Core.POLICY.LRU;
+                else
+                    selectedPolicy = Core.POLICY.LFU;
                 
                 var window = new Core(windowSize, selectedPolicy);
 
