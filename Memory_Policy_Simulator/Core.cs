@@ -17,8 +17,10 @@ namespace Memory_Policy_Simulator
         
         // LFU를 위한 페이지 참조 빈도 추적용 딕셔너리
         public Dictionary<char, int> pageFrequency;
-        // LFU 에이징을 위한 카운터
-        public int agingCounter;
+        // 순수 LFU의 tie-break를 위한 페이지 최초 삽입 시간 기록
+        public Dictionary<char, int> pageInsertionTime;
+        // 현재 시간 (페이지 처리 횟수)
+        public int currentTime;
 
         public int hit;
         public int fault;
@@ -40,12 +42,12 @@ namespace Memory_Policy_Simulator
             else // LRU, LFU
             {
                 this.frame_window = new List<Page>();
-                
-                // LFU 전용 초기화
+                  // LFU 전용 초기화
                 if (policy == POLICY.LFU)
                 {
                     this.pageFrequency = new Dictionary<char, int>();
-                    this.agingCounter = 0;
+                    this.pageInsertionTime = new Dictionary<char, int>();
+                    this.currentTime = 0;
                 }
             }
         }        public Page.STATUS Operate(char data)
@@ -148,26 +150,16 @@ namespace Memory_Policy_Simulator
             // LRU 스냅샷 기록
             this.framesHistory.Add(this.frame_window.Select(p => p.data).ToList());
             return newPage.status;
-        }
-
-        private Page.STATUS OperateLFU(char data)
+        }        private Page.STATUS OperateLFU(char data)
         {
             Page newPage = new Page();
             newPage.pid = Page.CREATE_ID++;
             newPage.data = data;
             
-            // 에이징 메커니즘: 일정 횟수마다 모든 페이지의 참조 빈도를 반으로 줄임
-            agingCounter++;
-            if (agingCounter >= 10) // 10번의 페이지 접근마다 에이징 수행
-            {
-                foreach (var key in pageFrequency.Keys.ToList())
-                {
-                    pageFrequency[key] = pageFrequency[key] / 2; // 에이징: 모든 참조 빈도를 반으로 줄임
-                }
-                agingCounter = 0;
-            }
+            // 시간(접근 횟수) 증가
+            currentTime++;
             
-            // 페이지 참조 빈도 갱신
+            // 페이지 참조 빈도 갱신 초기화
             if (!pageFrequency.ContainsKey(data))
             {
                 pageFrequency[data] = 0;
@@ -180,35 +172,47 @@ namespace Memory_Policy_Simulator
                 // Hit 처리
                 newPage.status = Page.STATUS.HIT;
                 this.hit++;
-                // 참조 빈도 증가
+                
+                // 순수 LFU: 참조 빈도만 증가시키고 위치는 변경하지 않음
                 pageFrequency[data]++;
                 
-                // 프레임에서 현재 위치 제거 후 다시 추가 (참조 순서 갱신)
-                this.frame_window.RemoveAt(idx);
-                this.frame_window.Add(newPage);
-                newPage.loc = this.frame_window.Count;
+                // 기존 페이지의 속성을 유지하면서 참조 횟수만 증가
+                newPage.loc = this.frame_window[idx].loc;
+                this.frame_window[idx] = newPage;
             }
             else
             {
                 // 페이지 폴트 처리
                 if (frame_window.Count >= p_frame_size)
                 {
-                    // 가장 적게 참조된 페이지 찾기
+                    // 가장 적게 참조된 페이지 찾기 (빈도 동일시 가장 오래된 페이지)
                     int minFreq = int.MaxValue;
-                    int minIdx = 0;
+                    int oldestTime = int.MaxValue;
+                    int victimIdx = 0;
                     
                     for (int i = 0; i < frame_window.Count; i++)
                     {
                         char pageData = frame_window[i].data;
-                        if (pageFrequency[pageData] < minFreq)
+                        int freq = pageFrequency[pageData];
+                        int insertTime = pageInsertionTime[pageData];
+                        
+                        // 더 낮은 빈도를 가진 페이지 찾기
+                        if (freq < minFreq)
                         {
-                            minFreq = pageFrequency[pageData];
-                            minIdx = i;
+                            minFreq = freq;
+                            oldestTime = insertTime;
+                            victimIdx = i;
+                        }
+                        // 빈도가 같은 경우 더 오래된 페이지(먼저 들어온 페이지) 선택
+                        else if (freq == minFreq && insertTime < oldestTime)
+                        {
+                            oldestTime = insertTime;
+                            victimIdx = i;
                         }
                     }
                     
-                    // 가장 적게 참조된 페이지 제거
-                    this.frame_window.RemoveAt(minIdx);
+                    // 희생 페이지 제거
+                    this.frame_window.RemoveAt(victimIdx);
                     newPage.status = Page.STATUS.MIGRATION;
                     this.migration++;
                     this.fault++;
@@ -221,8 +225,11 @@ namespace Memory_Policy_Simulator
                 
                 // 새 페이지 추가 및 참조 빈도 증가
                 this.frame_window.Add(newPage);
-                pageFrequency[data]++;
                 newPage.loc = this.frame_window.Count;
+                pageFrequency[data]++;
+                
+                // 페이지 최초 삽입 시간 기록 (tie-break용)
+                pageInsertionTime[data] = currentTime;
             }
             
             this.pageHistory.Add(newPage);
