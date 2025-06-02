@@ -32,50 +32,31 @@ namespace Memory_Policy_Simulator
 
         private void DrawBase(Core core, int windowSize, int dataLength)
         {
-            /* parse window */
-            var psudoQueue = new Queue<char>();
-
             g.Clear(Color.Black);
-
-            for ( int i = 0; i < dataLength; i++ ) // length
+            for (int i = 0; i < dataLength; i++)
             {
-                int psudoCursor = core.pageHistory[i].loc;
                 char data = core.pageHistory[i].data;
                 Page.STATUS status = core.pageHistory[i].status;
+                int loc = core.pageHistory[i].loc;               
 
-                switch ( status )
+                // 그리드 배경 및 데이터 표시
+                for (int j = 0; j <= windowSize; j++)
                 {
-                    case Page.STATUS.PAGEFAULT:
-                        psudoQueue.Enqueue(data);
-                        break;
-                    case Page.STATUS.MIGRATION:
-                        psudoQueue.Dequeue();
-                        psudoQueue.Enqueue(data);
-                        break;
+                    if (j == 0) DrawGridText(i, j, data);
+                    else DrawGrid(i, j);
                 }
 
-                for ( int j = 0; j <= windowSize; j++) // height - STEP
-                {
-                    if (j == 0)
-                    {
-                        DrawGridText(i, j, data);
-                    }
-                    else
-                    {
-                        DrawGrid(i, j);
-                    }
-                }
+                // 현재 접근 페이지 하이라이트
+                DrawGridHighlight(i, loc, status);
 
-                DrawGridHighlight(i, psudoCursor, status);
-                int depth = 1;
-
-                foreach ( char t in psudoQueue )
+                // LRU 프레임 스냅샷 표시
+                var snapshot = core.framesHistory[i];
+                for (int depth = 1; depth <= snapshot.Count; depth++)
                 {
-                    DrawGridText(i, depth++, t);
+                    DrawGridText(i, depth, snapshot[depth - 1]);
                 }
             }
         }
-
 
         private void DrawGrid(int x, int y)
         {
@@ -147,7 +128,12 @@ namespace Memory_Policy_Simulator
                 int windowSize = int.Parse(this.tbWindowSize.Text);
 
                 /* initalize */
-                var window = new Core(windowSize);
+                // 선택된 정책 확인 (FIFO / LRU)
+                Core.POLICY selectedPolicy = comboBox1.Text == "FIFO" 
+                    ? Core.POLICY.FIFO 
+                    : Core.POLICY.LRU;
+                
+                var window = new Core(windowSize, selectedPolicy);
 
                 foreach ( char element in data )
                 {
