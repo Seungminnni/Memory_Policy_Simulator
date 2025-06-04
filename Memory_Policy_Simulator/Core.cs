@@ -62,9 +62,7 @@ namespace Memory_Policy_Simulator
 
         private Page.STATUS OperateFIFO(char data)
         {
-            Page newPage;
-
-            if (this.fifo_frame_window.Any<Page>(x => x.data == data))
+            Page newPage;            if (this.fifo_frame_window.Any<Page>(x => x.data == data))
             {
                 newPage.pid = Page.CREATE_ID++;
                 newPage.data = data;
@@ -76,6 +74,7 @@ namespace Memory_Policy_Simulator
                 {
                     if (this.fifo_frame_window.ElementAt(i).data == data) break;
                 }
+                // Hit가 발생한 페이지의 위치를 저장 (실제 프레임 내 위치 + 1)
                 newPage.loc = i + 1;
             }
             else
@@ -163,9 +162,7 @@ namespace Memory_Policy_Simulator
             if (!pageFrequency.ContainsKey(data))
             {
                 pageFrequency[data] = 0;
-            }
-            
-            // 이미 프레임에 있는 페이지인지 확인
+            }            // 이미 프레임에 있는 페이지인지 확인
             int idx = this.frame_window.FindIndex(x => x.data == data);
             if (idx != -1)
             {
@@ -176,9 +173,11 @@ namespace Memory_Policy_Simulator
                 // 순수 LFU: 참조 빈도만 증가시키고 위치는 변경하지 않음
                 pageFrequency[data]++;
                 
-                // 기존 페이지의 속성을 유지하면서 참조 횟수만 증가
-                newPage.loc = this.frame_window[idx].loc;
-                this.frame_window[idx] = newPage;
+                // Hit가 발생한 페이지의 위치를 저장 - 반드시 실제 프레임 내 위치 + 1로 설정해야 함
+                newPage.loc = idx + 1;
+                
+                // pageHistory에 추가할 새 페이지는 현재 위치 정보를 정확히 가져야 함
+                // frame_window는 변경하지 않고, pageHistory에만 새 페이지 정보를 추가
             }
             else
             {

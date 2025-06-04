@@ -28,9 +28,7 @@ namespace Memory_Policy_Simulator
             this.pImage.Controls.Add(this.pbPlaceHolder);
             this.tbConsole.Multiline = true;
             this.tbConsole.ScrollBars = ScrollBars.Vertical;
-        }
-
-        private void DrawBase(Core core, int windowSize, int dataLength)
+        }        private void DrawBase(Core core, int windowSize, int dataLength)
         {
             g.Clear(Color.Black);
             for (int i = 0; i < dataLength; i++)
@@ -44,16 +42,24 @@ namespace Memory_Policy_Simulator
                 {
                     if (j == 0) DrawGridText(i, j, data);
                     else DrawGrid(i, j);
-                }
-
-                // 현재 접근 페이지 하이라이트
-                DrawGridHighlight(i, loc, status);
-
-                // LRU 프레임 스냅샷 표시
+                }                // 프레임 스냅샷 표시
                 var snapshot = core.framesHistory[i];
                 for (int depth = 1; depth <= snapshot.Count; depth++)
                 {
                     DrawGridText(i, depth, snapshot[depth - 1]);
+                }
+                
+                // Status에 따른 처리
+                if (status == Page.STATUS.HIT)
+                {
+                    // Hit인 경우: 레퍼런스 스트링과 실제 데이터가 있는 프레임 모두 강조 표시
+                    DrawGridHighlight(i, 0, status); // 레퍼런스 스트링
+                    DrawGridHighlight(i, loc, status); // 실제 메모리 프레임 내 위치
+                }
+                else
+                {
+                    // Hit가 아닌 경우: 레퍼런스 스트링만 강조 표시
+                    DrawGridHighlight(i, loc, status);
                 }
             }
         }
@@ -71,9 +77,7 @@ namespace Memory_Policy_Simulator
                 gridSize,
                 gridSize
                 ));
-        }
-
-        private void DrawGridHighlight(int x, int y, Page.STATUS status)
+        }        private void DrawGridHighlight(int x, int y, Page.STATUS status)
         {
             int gridSize = 30;
             int gridSpace = 5;
@@ -85,16 +89,24 @@ namespace Memory_Policy_Simulator
             switch (status)
             {
                 case Page.STATUS.HIT:
+                    highlighter.Color = Color.LimeGreen; // HIT는 밝은 녹색
                     break;
                 case Page.STATUS.MIGRATION:
-                    highlighter.Color = Color.Purple;
+                    highlighter.Color = Color.Purple; // MIGRATION은 보라색
                     break;
                 case Page.STATUS.PAGEFAULT:
-                    highlighter.Color = Color.Red;
+                    highlighter.Color = Color.Red; // PAGEFAULT는 빨간색
                     break;
-            }
-
+            }            // 사각형 영역을 해당 색상으로 채움
             g.FillRectangle(highlighter, new Rectangle(
+                gridBaseX + (x * gridSpace),
+                gridBaseY,
+                gridSize,
+                gridSize
+                ));
+                
+            // 해당 영역의 테두리를 강조하기 위해 추가 (선명하게 보이도록)
+            g.DrawRectangle(new Pen(highlighter.Color, 2), new Rectangle(
                 gridBaseX + (x * gridSpace),
                 gridBaseY,
                 gridSize,
