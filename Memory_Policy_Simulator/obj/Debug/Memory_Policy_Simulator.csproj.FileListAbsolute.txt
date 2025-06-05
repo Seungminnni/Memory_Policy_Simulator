@@ -1,0 +1,11 @@
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\bin\Debug\Memory_Policy_Simulator.exe.config
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\bin\Debug\Memory_Policy_Simulator.exe
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\obj\Debug\Memory_Policy_Simulator.csproj.AssemblyReference.cache
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\obj\Debug\Memory_Policy_Simulator.exe.config
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\obj\Debug\Memory_Policy_Simulator.Form1.resources
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\obj\Debug\Memory_Policy_Simulator.Properties.Resources.resources
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\obj\Debug\Memory_Policy_Simulator.csproj.GenerateResource.cache
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\obj\Debug\Memory_Policy_Simulator.csproj.CoreCompileInputs.cache
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\obj\Debug\Memory_Policy_Simulator.exe
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\obj\Debug\Memory_Policy_Simulator.pdb
+C:\Users\samsung\Desktop\Memory_Policy_Simulator\Memory_Policy_Simulator\bin\Debug\Memory_Policy_Simulator.pdb

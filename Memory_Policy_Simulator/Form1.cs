@@ -32,46 +32,93 @@ namespace Memory_Policy_Simulator
 
         private void DrawBase(Core core, int windowSize, int dataLength)
         {
-            /* parse window */
-            var psudoQueue = new Queue<char>();
-
             g.Clear(Color.Black);
 
-            for ( int i = 0; i < dataLength; i++ ) // length
+            if (core.policy == Core.POLICY.FIFO)
             {
-                int psudoCursor = core.pageHistory[i].loc;
-                char data = core.pageHistory[i].data;
-                Page.STATUS status = core.pageHistory[i].status;
-
-                switch ( status )
+                var psudoQueue = new Queue<char>();
+                for (int i = 0; i < dataLength; i++)
                 {
-                    case Page.STATUS.PAGEFAULT:
-                        psudoQueue.Enqueue(data);
-                        break;
-                    case Page.STATUS.MIGRATION:
-                        psudoQueue.Dequeue();
-                        psudoQueue.Enqueue(data);
-                        break;
-                }
+                    int psudoCursor = core.pageHistory[i].loc;
+                    char data = core.pageHistory[i].data;
+                    Page.STATUS status = core.pageHistory[i].status;
 
-                for ( int j = 0; j <= windowSize; j++) // height - STEP
-                {
-                    if (j == 0)
+                    switch (status)
                     {
-                        DrawGridText(i, j, data);
+                        case Page.STATUS.PAGEFAULT:
+                            psudoQueue.Enqueue(data);
+                            break;
+                        case Page.STATUS.MIGRATION:
+                            psudoQueue.Dequeue();
+                            psudoQueue.Enqueue(data);
+                            break;
                     }
-                    else
+
+                    for (int j = 0; j <= windowSize; j++)
                     {
-                        DrawGrid(i, j);
+                        if (j == 0)
+                            DrawGridText(i, j, data);
+                        else
+                            DrawGrid(i, j);
                     }
+
+                    DrawGridHighlight(i, psudoCursor, status);
+                    int depth = 1;
+                    foreach (char t in psudoQueue)
+                        DrawGridText(i, depth++, t);
                 }
-
-                DrawGridHighlight(i, psudoCursor, status);
-                int depth = 1;
-
-                foreach ( char t in psudoQueue )
+            }
+            else // LRU, MFU
+            {
+                // 각 시점의 프레임 상태를 Core의 내부 리스트에서 추적
+                List<char> frameSnapshot = new List<char>();
+                for (int i = 0; i < dataLength; i++)
                 {
-                    DrawGridText(i, depth++, t);
+                    int loc = core.pageHistory[i].loc;
+                    char data = core.pageHistory[i].data;
+                    Page.STATUS status = core.pageHistory[i].status;
+
+                    // 프레임 상태 업데이트
+                    if (status == Page.STATUS.HIT)
+                    {
+                        if (core.policy == Core.POLICY.LRU)
+                        {
+                            frameSnapshot.Remove(data);
+                            frameSnapshot.Add(data);
+                        }
+                        // MFU는 위치 변경 없음
+                    }
+                    else if (status == Page.STATUS.PAGEFAULT)
+                    {
+                        frameSnapshot.Add(data);
+                    }
+                    else if (status == Page.STATUS.MIGRATION)
+                    {
+                        if (core.policy == Core.POLICY.LRU)
+                        {
+                            frameSnapshot.RemoveAt(0);
+                            frameSnapshot.Add(data);
+                        }
+                        else // MFU
+                        {
+                            // MFU는 가장 많이 참조된 것 제거이지만, 시각화에서는 마지막 제거
+                            if (frameSnapshot.Count >= windowSize)
+                                frameSnapshot.RemoveAt(frameSnapshot.Count - 1);
+                            frameSnapshot.Add(data);
+                        }
+                    }
+
+                    for (int j = 0; j <= windowSize; j++)
+                    {
+                        if (j == 0)
+                            DrawGridText(i, j, data);
+                        else
+                            DrawGrid(i, j);
+                    }
+
+                    DrawGridHighlight(i, loc, status);
+                    for (int k = 0; k < frameSnapshot.Count && k < windowSize; k++)
+                        DrawGridText(i, k + 1, frameSnapshot[k]);
                 }
             }
         }
@@ -90,9 +137,7 @@ namespace Memory_Policy_Simulator
                 gridSize,
                 gridSize
                 ));
-        }
-
-        private void DrawGridHighlight(int x, int y, Page.STATUS status)
+        }        private void DrawGridHighlight(int x, int y, Page.STATUS status)
         {
             int gridSize = 30;
             int gridSpace = 5;
@@ -104,6 +149,7 @@ namespace Memory_Policy_Simulator
             switch (status)
             {
                 case Page.STATUS.HIT:
+                    highlighter.Color = Color.LimeGreen;  // HIT는 녹색으로 표시
                     break;
                 case Page.STATUS.MIGRATION:
                     highlighter.Color = Color.Purple;
@@ -142,12 +188,18 @@ namespace Memory_Policy_Simulator
             this.tbConsole.Clear();
 
             if (this.tbQueryString.Text != "" || this.tbWindowSize.Text != "")
-            {
-                string data = this.tbQueryString.Text;
+            {                string data = this.tbQueryString.Text;
                 int windowSize = int.Parse(this.tbWindowSize.Text);
 
                 /* initalize */
-                var window = new Core(windowSize);
+                Core.POLICY selectedPolicy = Core.POLICY.FIFO;
+                switch (this.comboBox1.Text)
+                {
+                    case "FIFO": selectedPolicy = Core.POLICY.FIFO; break;
+                    case "LRU":  selectedPolicy = Core.POLICY.LRU;  break;
+                    case "MFU":  selectedPolicy = Core.POLICY.MFU;  break;
+                }
+                var window = new Core(windowSize, selectedPolicy);
 
                 foreach ( char element in data )
                 {
