@@ -18,6 +18,8 @@ namespace Memory_Policy_Simulator
 
         private Queue<Page> frame_window;      // 프레임 윈도우
         private Dictionary<char, int> frequency;  // MFU용 페이지 참조 횟수
+        private Dictionary<char, int> insertionOrder;  // MFU용 페이지 최초 삽입 시점
+        private int insertionCount;  // 삽입 시점 카운터
         private int cursor;            // 현재 프레임 위치
 
         public Core(int get_frame_size, POLICY policy = POLICY.FIFO)
@@ -27,9 +29,8 @@ namespace Memory_Policy_Simulator
             this.pageHistory = new List<Page>();
             this.frame_window = new Queue<Page>();
             this.frequency = new Dictionary<char, int>();
-            this.hit = 0;
-            this.fault = 0;
-            this.migration = 0;
+            this.insertionOrder = new Dictionary<char, int>();
+            this.insertionCount = 0;
             this.cursor = 0;
         }
 
@@ -75,20 +76,15 @@ namespace Memory_Policy_Simulator
                     }
                     else if (policy == POLICY.MFU)
                     {
-                        // 참조 횟수 증가
+                        // 참조 횟수만 증가시키고, 순서는 유지
                         if (!frequency.ContainsKey(data))
+                        {
                             frequency[data] = 0;
+                            insertionOrder[data] = insertionCount++;
+                        }
                         frequency[data]++;
 
-                        // 참조 횟수가 적은 순서대로 정렬
-                        temp.Sort((a, b) =>
-                        {
-                            int freqA = frequency.ContainsKey(a.data) ? frequency[a.data] : 0;
-                            int freqB = frequency.ContainsKey(b.data) ? frequency[b.data] : 0;
-                            return freqA.CompareTo(freqB);
-                        });
-
-                        // 정렬된 순서대로 다시 큐에 넣음
+                        // 페이지들을 원래 순서대로 다시 넣기
                         foreach (var page in temp)
                             frame_window.Enqueue(page);
                         frame_window.Enqueue(hitPage);
@@ -106,18 +102,24 @@ namespace Memory_Policy_Simulator
 
                     if (policy == POLICY.MFU)
                     {
-                        // 가장 많이 참조된 페이지 찾기
+                        // 가장 많이 참조된 페이지와 그 중에서 가장 나중에 들어온 페이지 찾기
                         var temp = new List<Page>();
-                        Page maxFreqPage = frame_window.Peek();
-                        int maxFreq = frequency.ContainsKey(maxFreqPage.data) ? frequency[maxFreqPage.data] : 0;
+                        Page victimPage = frame_window.Peek();
+                        int maxFreq = frequency.ContainsKey(victimPage.data) ? frequency[victimPage.data] : 0;
+                        int latestInsertion = insertionOrder.ContainsKey(victimPage.data) ? insertionOrder[victimPage.data] : 0;
 
                         foreach (var page in frame_window)
                         {
                             int freq = frequency.ContainsKey(page.data) ? frequency[page.data] : 0;
-                            if (freq > maxFreq)
+                            int insertion = insertionOrder.ContainsKey(page.data) ? insertionOrder[page.data] : 0;
+
+                            // 1. 빈도수가 더 높은 페이지를 선택
+                            // 2. 빈도수가 같으면 나중에 들어온 페이지를 선택
+                            if (freq > maxFreq || (freq == maxFreq && insertion > latestInsertion))
                             {
                                 maxFreq = freq;
-                                maxFreqPage = page;
+                                latestInsertion = insertion;
+                                victimPage = page;
                             }
                             temp.Add(page);
                         }
@@ -125,18 +127,24 @@ namespace Memory_Policy_Simulator
                         frame_window.Clear();
                         foreach (var page in temp)
                         {
-                            if (page.data != maxFreqPage.data)
+                            if (page.data != victimPage.data)
                                 frame_window.Enqueue(page);
                         }
 
-                        if (frequency.ContainsKey(maxFreqPage.data))
-                            frequency.Remove(maxFreqPage.data);
+                        if (frequency.ContainsKey(victimPage.data))
+                        {
+                            frequency.Remove(victimPage.data);
+                            insertionOrder.Remove(victimPage.data);
+                        }
                     }
                     else  // FIFO 또는 LRU
                     {
                         var oldPage = frame_window.Dequeue();
                         if (frequency.ContainsKey(oldPage.data))
+                        {
                             frequency.Remove(oldPage.data);
+                            insertionOrder.Remove(oldPage.data);
+                        }
                     }
 
                     cursor = p_frame_size;
@@ -151,7 +159,10 @@ namespace Memory_Policy_Simulator
                 }
 
                 if (policy == POLICY.MFU)
+                {
                     frequency[data] = 1;  // 새 페이지의 참조 횟수 초기화
+                    insertionOrder[data] = insertionCount++;  // 삽입 시점 기록
+                }
 
                 newPage.loc = cursor;
                 frame_window.Enqueue(newPage);
