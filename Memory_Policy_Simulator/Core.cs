@@ -10,183 +10,154 @@ namespace Memory_Policy_Simulator
     {
         public enum POLICY { FIFO, LRU, MFU }
         public POLICY policy;
-        public int p_frame_size;
-        public int hit;
-        public int fault;
-        public int migration;
-        public List<Page> pageHistory;
+        public int p_frame_size;       // 프레임의 크기
+        public int hit;                // 페이지 히트 횟수
+        public int fault;              // 페이지 폴트 횟수
+        public int migration;          // 페이지 교체 횟수
+        public List<Page> pageHistory; // 전체 페이지 접근 기록
 
-        // FIFO
-        private Queue<Page> fifo_window;
-        // LRU
-        private List<Page> lru_window;
-        // MFU
-        private List<Page> mfu_window;
-        private Dictionary<char, int> mfu_freq;
+        private Queue<Page> frame_window;      // 프레임 윈도우
+        private Dictionary<char, int> frequency;  // MFU용 페이지 참조 횟수
+        private int cursor;            // 현재 프레임 위치
 
         public Core(int get_frame_size, POLICY policy = POLICY.FIFO)
         {
             this.p_frame_size = get_frame_size;
             this.policy = policy;
             this.pageHistory = new List<Page>();
+            this.frame_window = new Queue<Page>();
+            this.frequency = new Dictionary<char, int>();
             this.hit = 0;
             this.fault = 0;
             this.migration = 0;
-            if (policy == POLICY.FIFO)
-                this.fifo_window = new Queue<Page>();
-            if (policy == POLICY.LRU)
-                this.lru_window = new List<Page>();
-            if (policy == POLICY.MFU) {
-                this.mfu_window = new List<Page>();
-                this.mfu_freq = new Dictionary<char, int>();
-            }
+            this.cursor = 0;
         }
 
         public Page.STATUS Operate(char data)
         {
-            switch (policy)
-            {
-                case POLICY.FIFO: return OperateFIFO(data);
-                case POLICY.LRU:  return OperateLRU(data);
-                case POLICY.MFU:  return OperateMFU(data);
-                default: return OperateFIFO(data);
-            }
-        }
-
-        // FIFO
-        private Page.STATUS OperateFIFO(char data)
-        {
             Page newPage = new Page();
-            newPage.pid = Page.CREATE_ID++;
-            newPage.data = data;
-            if (this.fifo_window.Any(x => x.data == data))
+
+            if (this.frame_window.Any(x => x.data == data))
             {
+                newPage.pid = Page.CREATE_ID++;
+                newPage.data = data;
                 newPage.status = Page.STATUS.HIT;
                 this.hit++;
-                int i = 0;
-                foreach (var p in this.fifo_window) { if (p.data == data) break; i++; }
+                int i;
+
+                for (i = 0; i < this.frame_window.Count; i++)
+                {
+                    if (this.frame_window.ElementAt(i).data == data) break;
+                }
                 newPage.loc = i + 1;
+
+                // LRU나 MFU일 때는 hit된 페이지 재배치
+                if (policy != POLICY.FIFO)
+                {
+                    var temp = new List<Page>();
+                    var hitPage = this.frame_window.ElementAt(i);
+
+                    // 현재 프레임의 모든 페이지를 리스트로 복사
+                    foreach (var page in frame_window)
+                    {
+                        if (page.data != data)
+                            temp.Add(page);
+                    }
+
+                    frame_window.Clear();
+
+                    if (policy == POLICY.LRU)
+                    {
+                        // 모든 페이지를 다시 큐에 넣고, hit된 페이지는 마지막에 넣음
+                        foreach (var page in temp)
+                            frame_window.Enqueue(page);
+                        frame_window.Enqueue(hitPage);
+                    }
+                    else if (policy == POLICY.MFU)
+                    {
+                        // 참조 횟수 증가
+                        if (!frequency.ContainsKey(data))
+                            frequency[data] = 0;
+                        frequency[data]++;
+
+                        // 참조 횟수가 적은 순서대로 정렬
+                        temp.Sort((a, b) =>
+                        {
+                            int freqA = frequency.ContainsKey(a.data) ? frequency[a.data] : 0;
+                            int freqB = frequency.ContainsKey(b.data) ? frequency[b.data] : 0;
+                            return freqA.CompareTo(freqB);
+                        });
+
+                        // 정렬된 순서대로 다시 큐에 넣음
+                        foreach (var page in temp)
+                            frame_window.Enqueue(page);
+                        frame_window.Enqueue(hitPage);
+                    }
+                }
             }
             else
             {
-                if (fifo_window.Count >= p_frame_size)
+                newPage.pid = Page.CREATE_ID++;
+                newPage.data = data;
+
+                if (frame_window.Count >= p_frame_size)
                 {
                     newPage.status = Page.STATUS.MIGRATION;
-                    this.fifo_window.Dequeue();
+
+                    if (policy == POLICY.MFU)
+                    {
+                        // 가장 많이 참조된 페이지 찾기
+                        var temp = new List<Page>();
+                        Page maxFreqPage = frame_window.Peek();
+                        int maxFreq = frequency.ContainsKey(maxFreqPage.data) ? frequency[maxFreqPage.data] : 0;
+
+                        foreach (var page in frame_window)
+                        {
+                            int freq = frequency.ContainsKey(page.data) ? frequency[page.data] : 0;
+                            if (freq > maxFreq)
+                            {
+                                maxFreq = freq;
+                                maxFreqPage = page;
+                            }
+                            temp.Add(page);
+                        }
+
+                        frame_window.Clear();
+                        foreach (var page in temp)
+                        {
+                            if (page.data != maxFreqPage.data)
+                                frame_window.Enqueue(page);
+                        }
+
+                        if (frequency.ContainsKey(maxFreqPage.data))
+                            frequency.Remove(maxFreqPage.data);
+                    }
+                    else  // FIFO 또는 LRU
+                    {
+                        var oldPage = frame_window.Dequeue();
+                        if (frequency.ContainsKey(oldPage.data))
+                            frequency.Remove(oldPage.data);
+                    }
+
+                    cursor = p_frame_size;
                     this.migration++;
                     this.fault++;
                 }
                 else
                 {
                     newPage.status = Page.STATUS.PAGEFAULT;
+                    cursor++;
                     this.fault++;
                 }
-                newPage.loc = Math.Min(fifo_window.Count + 1, p_frame_size);
-                fifo_window.Enqueue(newPage);
+
+                if (policy == POLICY.MFU)
+                    frequency[data] = 1;  // 새 페이지의 참조 횟수 초기화
+
+                newPage.loc = cursor;
+                frame_window.Enqueue(newPage);
             }
             pageHistory.Add(newPage);
-            return newPage.status;
-        }
 
-        // LRU        
-        private Page.STATUS OperateLRU(char data)
-        {
-            Page newPage = new Page();
-            newPage.pid = Page.CREATE_ID++;
-            newPage.data = data;
-            int idx = lru_window.FindIndex(x => x.data == data);
-            if (idx != -1)
-            {
-                // Hit: mark the page as most recently used
-                newPage.status = Page.STATUS.HIT;
-                this.hit++;
-                
-                // Remove existing page and move to back (most recent)
-                lru_window.RemoveAt(idx);
-                lru_window.Add(newPage);
-                newPage.loc = idx + 1;  // maintain original position for visualization
-            }
-            else
-            {
-                if (lru_window.Count >= p_frame_size)
-                {
-                    // Miss & Migration: remove least recently used page (front)
-                    newPage.status = Page.STATUS.MIGRATION;
-                    lru_window.RemoveAt(0);
-                    this.migration++;
-                    this.fault++;
-                }
-                else
-                {
-                    // Miss & PageFault: add new page
-                    newPage.status = Page.STATUS.PAGEFAULT;
-                    this.fault++;
-                }
-                // Add new page to back as most recently used
-                lru_window.Add(newPage);
-                newPage.loc = lru_window.Count;
-            }
-            pageHistory.Add(newPage);
-            return newPage.status;
-        }
-
-        // MFU
-        private Page.STATUS OperateMFU(char data)
-        {
-            Page newPage = new Page();
-            newPage.pid = Page.CREATE_ID++;
-            newPage.data = data;
-
-            // Initialize frequency if not exists
-            if (!mfu_freq.ContainsKey(data))
-            {
-                mfu_freq[data] = 0;
-            }
-
-            int idx = mfu_window.FindIndex(x => x.data == data);
-            if (idx != -1)
-            {
-                // Hit: increment frequency and maintain position
-                newPage.status = Page.STATUS.HIT;
-                this.hit++;
-                mfu_freq[data]++;
-                newPage.loc = idx + 1;
-                mfu_window[idx] = newPage; // Update the page in place
-            }
-            else
-            {
-                if (mfu_window.Count >= p_frame_size)
-                {
-                    // Find highest frequency
-                    int maxFreq = mfu_window.Max(p => mfu_freq[p.data]);
-                    
-                    // Find the oldest page among those with max frequency
-                    var victimPage = mfu_window
-                        .Where(p => mfu_freq[p.data] == maxFreq)
-                        .OrderBy(p => p.pid)
-                        .First();
-
-                    int victimIdx = mfu_window.IndexOf(victimPage);
-                    mfu_freq.Remove(victimPage.data);
-                    mfu_window.RemoveAt(victimIdx);
-
-                    newPage.status = Page.STATUS.MIGRATION;
-                    this.migration++;
-                    this.fault++;
-                }
-                else
-                {
-                    newPage.status = Page.STATUS.PAGEFAULT;
-                    this.fault++;
-                }
-                
-                // Add new page
-                mfu_window.Add(newPage);
-                mfu_freq[data] = 1; // Initialize frequency to 1
-                newPage.loc = mfu_window.Count;
-            }
-            
-            pageHistory.Add(newPage);
             return newPage.status;
         }
 
