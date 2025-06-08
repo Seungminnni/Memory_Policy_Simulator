@@ -76,21 +76,27 @@ namespace Memory_Policy_Simulator
                 {
                     int loc = core.pageHistory[i].loc;
                     char data = core.pageHistory[i].data;
-                    Page.STATUS status = core.pageHistory[i].status;
-
-                    // 프레임 상태 업데이트
+                    Page.STATUS status = core.pageHistory[i].status;                    // 프레임 상태 업데이트
+                    int actualLoc = loc; // 기본값은 Core에서 계산된 loc
                     if (status == Page.STATUS.HIT)
                     {
                         if (core.policy == Core.POLICY.LRU)
                         {
                             frameSnapshot.Remove(data);
                             frameSnapshot.Add(data);
+                            // LRU에서 HIT 시 마지막 위치로 이동
+                            actualLoc = frameSnapshot.Count;
                         }
-                        // MFU는 위치 변경 없음
+                        else if (core.policy == Core.POLICY.MFU)
+                        {
+                            // MFU에서 HIT 시 현재 위치 찾기
+                            actualLoc = frameSnapshot.IndexOf(data) + 1;
+                        }
                     }
                     else if (status == Page.STATUS.PAGEFAULT)
                     {
                         frameSnapshot.Add(data);
+                        actualLoc = frameSnapshot.Count;
                     }
                     else if (status == Page.STATUS.MIGRATION)
                     {
@@ -98,6 +104,7 @@ namespace Memory_Policy_Simulator
                         {
                             frameSnapshot.RemoveAt(0);
                             frameSnapshot.Add(data);
+                            actualLoc = frameSnapshot.Count;
                         }
                         else // MFU
                         {
@@ -105,6 +112,7 @@ namespace Memory_Policy_Simulator
                             if (frameSnapshot.Count >= windowSize)
                                 frameSnapshot.RemoveAt(frameSnapshot.Count - 1);
                             frameSnapshot.Add(data);
+                            actualLoc = frameSnapshot.Count;
                         }
                     }
 
@@ -116,7 +124,7 @@ namespace Memory_Policy_Simulator
                             DrawGrid(i, j);
                     }
 
-                    DrawGridHighlight(i, loc, status);
+                    DrawGridHighlight(i, actualLoc, status);
                     for (int k = 0; k < frameSnapshot.Count && k < windowSize; k++)
                         DrawGridText(i, k + 1, frameSnapshot[k]);
                 }
