@@ -65,10 +65,8 @@ namespace Memory_Policy_Simulator
                     DrawGridHighlight(i, psudoCursor, status);
                     int depth = 1;
                     foreach (char t in psudoQueue)
-                        DrawGridText(i, depth++, t);
-                }
+                        DrawGridText(i, depth++, t);                }
             }
-        }
             else // LRU, MFU
             {
                 // 각 시점의 프레임 상태를 Core의 내부 리스트에서 추적
@@ -193,9 +191,10 @@ namespace Memory_Policy_Simulator
                 gridBaseX + (x * gridSpace),
                 gridBaseY,
                 gridSize,
-                gridSize
-                ));
-        }        private void DrawGridHighlight(int x, int y, Page.STATUS status)
+                gridSize                ));
+        }
+
+        private void DrawGridHighlight(int x, int y, Page.STATUS status)
         {
             int gridSize = 30;
             int gridSpace = 5;
@@ -243,10 +242,9 @@ namespace Memory_Policy_Simulator
 
         private void btnOperate_Click(object sender, EventArgs e)
         {
-            this.tbConsole.Clear();
-
-            if (this.tbQueryString.Text != "" && this.tbWindowSize.Text != "")
-            {                string data = this.tbQueryString.Text;
+            this.tbConsole.Clear();            if (this.tbQueryString.Text != "" && this.tbWindowSize.Text != "")
+            {
+                string data = this.tbQueryString.Text;
                 int windowSize = int.Parse(this.tbWindowSize.Text);
 
                 /* initalize */
@@ -303,14 +301,12 @@ namespace Memory_Policy_Simulator
         private void tbWindowSize_KeyDown(object sender, KeyEventArgs e)
         {
 
-        }
-
-        private void tbWindowSize_KeyPress(object sender, KeyPressEventArgs e)
+        }        private void tbWindowSize_KeyPress(object sender, KeyPressEventArgs e)
         {
-                if (!(Char.IsDigit(e.KeyChar)) && e.KeyChar != 8)
-                {
-                    e.Handled = true;
-                }
+            if (!(Char.IsDigit(e.KeyChar)) && e.KeyChar != 8)
+            {
+                e.Handled = true;
+            }
         }
 
         private void btnRand_Click(object sender, EventArgs e)
@@ -318,10 +314,7 @@ namespace Memory_Policy_Simulator
             Random rd = new Random();
 
             int count = rd.Next(5, 50);
-            StringBuilder sb = new StringBuilder();
-
-
-            for ( int i = 0; i < count; i++ )
+            StringBuilder sb = new StringBuilder();            for (int i = 0; i < count; i++)
             {
                 sb.Append((char)rd.Next(65, 90));
             }
