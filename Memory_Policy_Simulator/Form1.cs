@@ -86,11 +86,11 @@ namespace Memory_Policy_Simulator
                             frameSnapshot.Add(data);
                             // LRU에서 HIT 시 마지막 위치로 이동
                             actualLoc = frameSnapshot.Count;
-                        }
-                        else if (core.policy == Core.POLICY.MFU)
+                        }                        else if (core.policy == Core.POLICY.MFU)
                         {
-                            // MFU에서 HIT 시 현재 위치 찾기
+                            // MFU에서 HIT 시 현재 위치 찾기 (위치 변경 없음)
                             actualLoc = frameSnapshot.IndexOf(data) + 1;
+                            // frameSnapshot은 변경하지 않음 (MFU는 HIT 시 순서 유지)
                         }
                     }
                     else if (status == Page.STATUS.PAGEFAULT)

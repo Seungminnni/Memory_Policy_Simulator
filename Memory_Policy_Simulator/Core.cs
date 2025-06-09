@@ -73,8 +73,7 @@ namespace Memory_Policy_Simulator
                         foreach (var page in temp)
                             frame_window.Enqueue(page);
                         frame_window.Enqueue(hitPage);
-                    }
-                    else if (policy == POLICY.MFU)
+                    }                    else if (policy == POLICY.MFU)
                     {
                         // 참조 횟수만 증가시키고, 순서는 유지
                         if (!frequency.ContainsKey(data))
@@ -84,10 +83,17 @@ namespace Memory_Policy_Simulator
                         }
                         frequency[data]++;
 
-                        // 페이지들을 원래 순서대로 다시 넣기
-                        foreach (var page in temp)
-                            frame_window.Enqueue(page);
-                        frame_window.Enqueue(hitPage);
+                        // MFU에서는 HIT 시 페이지 순서를 변경하지 않음
+                        // 원래 위치에 그대로 다시 넣기
+                        for (int k = 0; k < temp.Count + 1; k++)
+                        {
+                            if (k == i)
+                                frame_window.Enqueue(hitPage);
+                            else if (k < i)
+                                frame_window.Enqueue(temp[k]);
+                            else
+                                frame_window.Enqueue(temp[k - 1]);
+                        }
                     }
                 }
             }
