@@ -68,16 +68,23 @@ namespace Memory_Policy_Simulator
                         DrawGridText(i, depth++, t);
                 }
             }
+        }
             else // LRU, MFU
             {
                 // 각 시점의 프레임 상태를 Core의 내부 리스트에서 추적
                 List<char> frameSnapshot = new List<char>();
+                Dictionary<char, int> freq = new Dictionary<char, int>();
+                Dictionary<char, int> order = new Dictionary<char, int>();
+                int orderCount = 0;
+
                 for (int i = 0; i < dataLength; i++)
                 {
                     int loc = core.pageHistory[i].loc;
                     char data = core.pageHistory[i].data;
-                    Page.STATUS status = core.pageHistory[i].status;                    // 프레임 상태 업데이트
+                    Page.STATUS status = core.pageHistory[i].status;
+
                     int actualLoc = loc; // 기본값은 Core에서 계산된 loc
+
                     if (status == Page.STATUS.HIT)
                     {
                         if (core.policy == Core.POLICY.LRU)
@@ -86,32 +93,75 @@ namespace Memory_Policy_Simulator
                             frameSnapshot.Add(data);
                             // LRU에서 HIT 시 마지막 위치로 이동
                             actualLoc = frameSnapshot.Count;
-                        }                        else if (core.policy == Core.POLICY.MFU)
+                        }
+                        else // MFU
                         {
-                            // MFU에서 HIT 시 현재 위치 찾기 (위치 변경 없음)
+                            if (!freq.ContainsKey(data))
+                            {
+                                freq[data] = 0;
+                                order[data] = orderCount++;
+                            }
+                            freq[data]++;
+                            // MFU에서 HIT 시 위치 변경 없음
                             actualLoc = frameSnapshot.IndexOf(data) + 1;
-                            // frameSnapshot은 변경하지 않음 (MFU는 HIT 시 순서 유지)
                         }
                     }
                     else if (status == Page.STATUS.PAGEFAULT)
                     {
                         frameSnapshot.Add(data);
                         actualLoc = frameSnapshot.Count;
+
+                        if (core.policy == Core.POLICY.MFU)
+                        {
+                            freq[data] = 1;
+                            order[data] = orderCount++;
+                        }
                     }
                     else if (status == Page.STATUS.MIGRATION)
                     {
                         if (core.policy == Core.POLICY.LRU)
                         {
+                            char victim = frameSnapshot[0];
                             frameSnapshot.RemoveAt(0);
+                            if (freq.ContainsKey(victim))
+                            {
+                                freq.Remove(victim);
+                                order.Remove(victim);
+                            }
                             frameSnapshot.Add(data);
                             actualLoc = frameSnapshot.Count;
                         }
                         else // MFU
                         {
-                            // MFU는 가장 많이 참조된 것 제거이지만, 시각화에서는 마지막 제거
-                            if (frameSnapshot.Count >= windowSize)
-                                frameSnapshot.RemoveAt(frameSnapshot.Count - 1);
+                            int victimIndex = 0;
+                            char victimChar = frameSnapshot[0];
+                            int maxFreq = freq.ContainsKey(victimChar) ? freq[victimChar] : 0;
+                            int latest = order.ContainsKey(victimChar) ? order[victimChar] : 0;
+
+                            for (int v = 0; v < frameSnapshot.Count; v++)
+                            {
+                                char candidate = frameSnapshot[v];
+                                int f = freq.ContainsKey(candidate) ? freq[candidate] : 0;
+                                int ins = order.ContainsKey(candidate) ? order[candidate] : 0;
+                                if (f > maxFreq || (f == maxFreq && ins > latest))
+                                {
+                                    maxFreq = f;
+                                    latest = ins;
+                                    victimIndex = v;
+                                    victimChar = candidate;
+                                }
+                            }
+
+                            frameSnapshot.RemoveAt(victimIndex);
+                            if (freq.ContainsKey(victimChar))
+                            {
+                                freq.Remove(victimChar);
+                                order.Remove(victimChar);
+                            }
+
                             frameSnapshot.Add(data);
+                            freq[data] = 1;
+                            order[data] = orderCount++;
                             actualLoc = frameSnapshot.Count;
                         }
                     }
@@ -195,7 +245,7 @@ namespace Memory_Policy_Simulator
         {
             this.tbConsole.Clear();
 
-            if (this.tbQueryString.Text != "" || this.tbWindowSize.Text != "")
+            if (this.tbQueryString.Text != "" && this.tbWindowSize.Text != "")
             {                string data = this.tbQueryString.Text;
                 int windowSize = int.Parse(this.tbWindowSize.Text);
 
