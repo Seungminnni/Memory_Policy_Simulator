@@ -332,6 +332,13 @@ namespace Memory_Policy_Simulator
             }
         }
 
+        public List<char> GetCurrentFrames()
+        {
+            if (policy == POLICY.NEW)
+                return framesOrder.ToList();
+            return frame_window.Select(p => p.data).ToList();
+        }
+
         public List<Page> GetPageInfo(Page.STATUS status)
         {
             List<Page> pages = new List<Page>();

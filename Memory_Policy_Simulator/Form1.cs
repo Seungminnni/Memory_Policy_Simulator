@@ -214,6 +214,12 @@ namespace Memory_Policy_Simulator
                     for (int k = 0; k < frameSnapshot.Count && k < windowSize; k++)
                         DrawGridText(i, k + 1, frameSnapshot[k]);
                 }
+
+                // ensure final snapshot matches internal state
+                var finalFrames = core.GetCurrentFrames();
+                int row = dataLength - 1;
+                for (int k = 0; k < finalFrames.Count && k < windowSize; k++)
+                    DrawGridText(row, k + 1, finalFrames[k]);
             }
         }
 
