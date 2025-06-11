@@ -57,7 +57,7 @@
             // btnOperate
             // 
             this.btnOperate.Font = new System.Drawing.Font("Tahoma", 8.25F);
-            this.btnOperate.Location = new System.Drawing.Point(1031, 7);
+            this.btnOperate.Location = new System.Drawing.Point(1205, 7);
             this.btnOperate.Name = "btnOperate";
             this.btnOperate.Size = new System.Drawing.Size(142, 70);
             this.btnOperate.TabIndex = 0;
@@ -152,7 +152,7 @@
             // btnRand
             // 
             this.btnRand.Font = new System.Drawing.Font("Tahoma", 8.25F);
-            this.btnRand.Location = new System.Drawing.Point(889, 6);
+            this.btnRand.Location = new System.Drawing.Point(1050, 6);
             this.btnRand.Name = "btnRand";
             this.btnRand.Size = new System.Drawing.Size(136, 71);
             this.btnRand.TabIndex = 7;
@@ -163,7 +163,7 @@
             // btnSave
             // 
             this.btnSave.Font = new System.Drawing.Font("Tahoma", 8.25F);
-            this.btnSave.Location = new System.Drawing.Point(1179, 6);
+            this.btnSave.Location = new System.Drawing.Point(1361, 6);
             this.btnSave.Name = "btnSave";
             this.btnSave.Size = new System.Drawing.Size(108, 71);
             this.btnSave.TabIndex = 7;
@@ -259,7 +259,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(13F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1299, 739);
+            this.ClientSize = new System.Drawing.Size(1500, 739);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.labelW);
             this.Controls.Add(this.labelT);

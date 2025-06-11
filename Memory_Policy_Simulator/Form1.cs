@@ -67,7 +67,7 @@ namespace Memory_Policy_Simulator
                     foreach (char t in psudoQueue)
                         DrawGridText(i, depth++, t);                }
             }
-            else // LRU, MFU, NEW
+            else if (core.policy == Core.POLICY.LRU || core.policy == Core.POLICY.MFU)
             {
                 // 각 시점의 프레임 상태를 Core의 내부 리스트에서 추적
                 List<char> frameSnapshot = new List<char>();
@@ -173,6 +173,44 @@ namespace Memory_Policy_Simulator
                     }
 
                     DrawGridHighlight(i, actualLoc, status);
+                    for (int k = 0; k < frameSnapshot.Count && k < windowSize; k++)
+                        DrawGridText(i, k + 1, frameSnapshot[k]);
+                }
+            }
+            else // NEW
+            {
+                List<char> frameSnapshot = new List<char>();
+
+                for (int i = 0; i < dataLength; i++)
+                {
+                    var page = core.pageHistory[i];
+                    char data = page.data;
+
+                    if (page.status == Page.STATUS.HIT)
+                    {
+                        frameSnapshot.Remove(data);
+                        frameSnapshot.Insert(0, data);
+                    }
+                    else if (page.status == Page.STATUS.PAGEFAULT)
+                    {
+                        frameSnapshot.Insert(0, data);
+                    }
+                    else if (page.status == Page.STATUS.MIGRATION)
+                    {
+                        if (frameSnapshot.Count >= windowSize)
+                            frameSnapshot.RemoveAt(frameSnapshot.Count - 1);
+                        frameSnapshot.Insert(0, data);
+                    }
+
+                    for (int j = 0; j <= windowSize; j++)
+                    {
+                        if (j == 0)
+                            DrawGridText(i, j, data);
+                        else
+                            DrawGrid(i, j);
+                    }
+
+                    DrawGridHighlight(i, page.loc, page.status);
                     for (int k = 0; k < frameSnapshot.Count && k < windowSize; k++)
                         DrawGridText(i, k + 1, frameSnapshot[k]);
                 }
