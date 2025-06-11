@@ -47,6 +47,10 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label4 = new System.Windows.Forms.Label();
             this.lbPageFaultRatio = new System.Windows.Forms.Label();
+            this.tbPhaseWindow = new System.Windows.Forms.TextBox();
+            this.tbThreshold = new System.Windows.Forms.TextBox();
+            this.labelW = new System.Windows.Forms.Label();
+            this.labelT = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.chart1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -72,6 +76,28 @@
             this.tbWindowSize.Text = "4";
             this.tbWindowSize.KeyDown += new System.Windows.Forms.KeyEventHandler(this.tbWindowSize_KeyDown);
             this.tbWindowSize.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tbWindowSize_KeyPress);
+            //
+            // tbPhaseWindow
+            //
+            this.tbPhaseWindow.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.tbPhaseWindow.Font = new System.Drawing.Font("Tahoma", 8.25F);
+            this.tbPhaseWindow.Location = new System.Drawing.Point(889, 33);
+            this.tbPhaseWindow.Name = "tbPhaseWindow";
+            this.tbPhaseWindow.Size = new System.Drawing.Size(80, 34);
+            this.tbPhaseWindow.TabIndex = 9;
+            this.tbPhaseWindow.Text = "1000";
+            this.tbPhaseWindow.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tbPhaseWindow_KeyPress);
+            //
+            // tbThreshold
+            //
+            this.tbThreshold.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.tbThreshold.Font = new System.Drawing.Font("Tahoma", 8.25F);
+            this.tbThreshold.Location = new System.Drawing.Point(975, 33);
+            this.tbThreshold.Name = "tbThreshold";
+            this.tbThreshold.Size = new System.Drawing.Size(50, 34);
+            this.tbThreshold.TabIndex = 10;
+            this.tbThreshold.Text = "50";
+            this.tbThreshold.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tbThreshold_KeyPress);
             // 
             // tbQueryString
             // 
@@ -151,7 +177,8 @@
             this.comboBox1.Items.AddRange(new object[] {
             "FIFO",
             "LRU",
-            "MFU"});
+            "MFU",
+            "NEW"});
             this.comboBox1.Location = new System.Drawing.Point(12, 34);
             this.comboBox1.Name = "comboBox1";
             this.comboBox1.Size = new System.Drawing.Size(121, 32);
@@ -188,6 +215,26 @@
             this.label3.Size = new System.Drawing.Size(89, 27);
             this.label3.TabIndex = 9;
             this.label3.Text = "#Frame";
+            //
+            // labelW
+            //
+            this.labelW.AutoSize = true;
+            this.labelW.Font = new System.Drawing.Font("Tahoma", 8.25F);
+            this.labelW.Location = new System.Drawing.Point(889, 4);
+            this.labelW.Name = "labelW";
+            this.labelW.Size = new System.Drawing.Size(26, 27);
+            this.labelW.TabIndex = 11;
+            this.labelW.Text = "W";
+            //
+            // labelT
+            //
+            this.labelT.AutoSize = true;
+            this.labelT.Font = new System.Drawing.Font("Tahoma", 8.25F);
+            this.labelT.Location = new System.Drawing.Point(975, 4);
+            this.labelT.Name = "labelT";
+            this.labelT.Size = new System.Drawing.Size(21, 27);
+            this.labelT.TabIndex = 12;
+            this.labelT.Text = "T";
             // 
             // label4
             // 
@@ -214,6 +261,8 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1299, 739);
             this.Controls.Add(this.label3);
+            this.Controls.Add(this.labelW);
+            this.Controls.Add(this.labelT);
             this.Controls.Add(this.lbPageFaultRatio);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.label2);
@@ -225,6 +274,8 @@
             this.Controls.Add(this.tbConsole);
             this.Controls.Add(this.pImage);
             this.Controls.Add(this.tbQueryString);
+            this.Controls.Add(this.tbThreshold);
+            this.Controls.Add(this.tbPhaseWindow);
             this.Controls.Add(this.tbWindowSize);
             this.Controls.Add(this.btnOperate);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
@@ -257,6 +308,10 @@
         private System.Windows.Forms.Label label3;
         private System.Windows.Forms.Label label4;
         private System.Windows.Forms.Label lbPageFaultRatio;
+        private System.Windows.Forms.TextBox tbPhaseWindow;
+        private System.Windows.Forms.TextBox tbThreshold;
+        private System.Windows.Forms.Label labelW;
+        private System.Windows.Forms.Label labelT;
     }
 }
 

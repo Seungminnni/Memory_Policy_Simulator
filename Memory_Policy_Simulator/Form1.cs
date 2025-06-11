@@ -67,7 +67,7 @@ namespace Memory_Policy_Simulator
                     foreach (char t in psudoQueue)
                         DrawGridText(i, depth++, t);                }
             }
-            else // LRU, MFU
+            else // LRU, MFU, NEW
             {
                 // 각 시점의 프레임 상태를 Core의 내부 리스트에서 추적
                 List<char> frameSnapshot = new List<char>();
@@ -254,8 +254,13 @@ namespace Memory_Policy_Simulator
                     case "FIFO": selectedPolicy = Core.POLICY.FIFO; break;
                     case "LRU":  selectedPolicy = Core.POLICY.LRU;  break;
                     case "MFU":  selectedPolicy = Core.POLICY.MFU;  break;
+                    case "NEW":  selectedPolicy = Core.POLICY.NEW;  break;
                 }
-                var window = new Core(windowSize, selectedPolicy);
+                int w = 1000;
+                int t = 50;
+                if (int.TryParse(this.tbPhaseWindow.Text, out int tmpW)) w = tmpW;
+                if (int.TryParse(this.tbThreshold.Text, out int tmpT)) t = tmpT;
+                var window = new Core(windowSize, selectedPolicy, w, t, data.ToList());
 
                 foreach ( char element in data )
                 {
@@ -301,7 +306,25 @@ namespace Memory_Policy_Simulator
         private void tbWindowSize_KeyDown(object sender, KeyEventArgs e)
         {
 
-        }        private void tbWindowSize_KeyPress(object sender, KeyPressEventArgs e)
+        }
+
+        private void tbWindowSize_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(Char.IsDigit(e.KeyChar)) && e.KeyChar != 8)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void tbPhaseWindow_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(Char.IsDigit(e.KeyChar)) && e.KeyChar != 8)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void tbThreshold_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (!(Char.IsDigit(e.KeyChar)) && e.KeyChar != 8)
             {

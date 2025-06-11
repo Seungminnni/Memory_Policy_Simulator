@@ -8,7 +8,7 @@ namespace Memory_Policy_Simulator
 {
     public class Core
     {
-        public enum POLICY { FIFO, LRU, MFU }
+        public enum POLICY { FIFO, LRU, MFU, NEW }
         public POLICY policy;
         public int p_frame_size;       // 프레임의 크기
         public int hit;                // 페이지 히트 횟수
@@ -22,7 +22,19 @@ namespace Memory_Policy_Simulator
         private int insertionCount;  // 삽입 시점 카운터
         private int cursor;            // 현재 프레임 위치
 
-        public Core(int get_frame_size, POLICY policy = POLICY.FIFO)
+        // hybrid policy fields
+        private HashSet<char> framesNew;            // 현재 로드된 페이지
+        private LinkedList<char> framesOrder;       // LRU 순서 (앞:최근)
+        private LinkedList<char> globalHistory;     // 전체 참조 기록
+        private Queue<int> distWindow;              // 최근 W개 스택 거리
+        private Dictionary<int, int> histCurrent;   // 현재 히스토그램
+        private Dictionary<int, int> histPrev;      // 이전 히스토그램
+        private List<char> refString;               // 전체 참조열
+        private int phaseWindow;
+        private int thresholdT;
+        private int index;
+
+        public Core(int get_frame_size, POLICY policy = POLICY.FIFO, int phaseWindow = 1000, int thresholdT = 50, List<char> refString = null)
         {
             this.p_frame_size = get_frame_size;
             this.policy = policy;
@@ -32,10 +44,24 @@ namespace Memory_Policy_Simulator
             this.insertionOrder = new Dictionary<char, int>();
             this.insertionCount = 0;
             this.cursor = 0;
+
+            this.framesNew = new HashSet<char>();
+            this.framesOrder = new LinkedList<char>();
+            this.globalHistory = new LinkedList<char>();
+            this.distWindow = new Queue<int>();
+            this.histCurrent = new Dictionary<int, int>();
+            this.histPrev = new Dictionary<int, int>();
+            this.refString = refString ?? new List<char>();
+            this.phaseWindow = phaseWindow;
+            this.thresholdT = thresholdT;
+            this.index = 0;
         }
 
         public Page.STATUS Operate(char data)
         {
+            if (policy == POLICY.NEW)
+                return OperateNew(data);
+
             Page newPage = new Page();
 
             if (this.frame_window.Any(x => x.data == data))
@@ -176,6 +202,134 @@ namespace Memory_Policy_Simulator
             pageHistory.Add(newPage);
 
             return newPage.status;
+        }
+
+        private Page.STATUS OperateNew(char data)
+        {
+            UpdateStackDistance(data);
+            if (PhaseBoundaryDetected())
+            {
+                var window = refString.Skip(index + 1).Take(phaseWindow).ToList();
+                var newSet = PredictWorkingSet(window);
+                ReplaceWorkingSet(newSet);
+            }
+
+            Page page = new Page();
+            page.pid = Page.CREATE_ID++;
+            page.data = data;
+
+            if (framesNew.Contains(data))
+            {
+                hit++;
+                page.status = Page.STATUS.HIT;
+                framesOrder.Remove(data);
+                framesOrder.AddFirst(data);
+            }
+            else
+            {
+                fault++;
+                if (framesNew.Count >= p_frame_size)
+                {
+                    char victim = framesOrder.Last.Value;
+                    framesOrder.RemoveLast();
+                    framesNew.Remove(victim);
+                    framesNew.Add(data);
+                    framesOrder.AddFirst(data);
+                    page.status = Page.STATUS.MIGRATION;
+                    migration++;
+                }
+                else
+                {
+                    framesNew.Add(data);
+                    framesOrder.AddFirst(data);
+                    page.status = Page.STATUS.PAGEFAULT;
+                }
+            }
+
+            index++;
+            page.loc = framesOrder.ToList().IndexOf(data) + 1;
+            pageHistory.Add(page);
+            return page.status;
+        }
+
+        private void UpdateStackDistance(char page)
+        {
+            int dist = int.MaxValue;
+            int pos = 0;
+            foreach (var c in globalHistory)
+            {
+                if (c == page)
+                {
+                    dist = pos;
+                    break;
+                }
+                pos++;
+            }
+
+            distWindow.Enqueue(dist);
+            if (!histCurrent.ContainsKey(dist)) histCurrent[dist] = 0;
+            histCurrent[dist]++;
+            if (distWindow.Count > phaseWindow)
+            {
+                int old = distWindow.Dequeue();
+                histCurrent[old]--;
+                if (histCurrent[old] == 0) histCurrent.Remove(old);
+            }
+
+            globalHistory.Remove(page);
+            globalHistory.AddFirst(page);
+        }
+
+        private bool PhaseBoundaryDetected()
+        {
+            int diff = 0;
+            var keys = new HashSet<int>(histCurrent.Keys.Concat(histPrev.Keys));
+            foreach (var k in keys)
+            {
+                int cur = histCurrent.ContainsKey(k) ? histCurrent[k] : 0;
+                int prev = histPrev.ContainsKey(k) ? histPrev[k] : 0;
+                diff += Math.Abs(cur - prev);
+            }
+
+            if (diff > thresholdT)
+            {
+                histPrev = new Dictionary<int, int>(histCurrent);
+                return true;
+            }
+            return false;
+        }
+
+        private HashSet<char> PredictWorkingSet(List<char> window)
+        {
+            var freq = new Dictionary<char, int>();
+            foreach (var r in window)
+            {
+                if (!freq.ContainsKey(r)) freq[r] = 0;
+                freq[r]++;
+            }
+            return new HashSet<char>(freq.OrderByDescending(k => k.Value).Take(p_frame_size).Select(k => k.Key));
+        }
+
+        private void ReplaceWorkingSet(HashSet<char> newSet)
+        {
+            var toUnload = framesNew.Where(p => !newSet.Contains(p)).ToList();
+            foreach (var p in toUnload)
+            {
+                framesNew.Remove(p);
+                framesOrder.Remove(p);
+            }
+
+            foreach (var p in newSet)
+            {
+                if (framesNew.Count >= p_frame_size)
+                    break;
+                if (!framesNew.Contains(p))
+                {
+                    framesNew.Add(p);
+                    framesOrder.AddFirst(p);
+                    fault++;
+                }
+            }
         }
 
         public List<Page> GetPageInfo(Page.STATUS status)
