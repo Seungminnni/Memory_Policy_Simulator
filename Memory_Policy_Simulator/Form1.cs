@@ -301,7 +301,7 @@ namespace Memory_Policy_Simulator
                     case "NEW":  selectedPolicy = Core.POLICY.NEW;  break;
                 }
                 int w = 5;
-                double t = 0.5;
+                double t = 3;
                 if (int.TryParse(this.tbPhaseWindow.Text, out int tmpW)) w = tmpW;
                 if (double.TryParse(this.tbThreshold.Text, out double tmpT)) t = tmpT;
                 var window = new Core(windowSize, selectedPolicy, w, t, data.ToList());
@@ -401,7 +401,7 @@ namespace Memory_Policy_Simulator
                 if (string.IsNullOrWhiteSpace(this.tbPhaseWindow.Text))
                     this.tbPhaseWindow.Text = "5";
                 if (string.IsNullOrWhiteSpace(this.tbThreshold.Text))
-                    this.tbThreshold.Text = "0.5";
+                    this.tbThreshold.Text = "3";
             }
             else
             {
