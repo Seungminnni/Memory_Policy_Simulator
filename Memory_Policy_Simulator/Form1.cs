@@ -301,18 +301,21 @@ namespace Memory_Policy_Simulator
                     case "NEW":  selectedPolicy = Core.POLICY.NEW;  break;
                 }
                 int w = 5;
-                double t = 3;
-                if (int.TryParse(this.tbPhaseWindow.Text, out int tmpW)) w = tmpW;
-                if (double.TryParse(this.tbThreshold.Text, out double tmpT)) t = tmpT;
-                var window = new Core(windowSize, selectedPolicy, w, t, data.ToList());
+                UpdatePieChart(window);
 
-                foreach ( char element in data )
-                {
-                    var status = window.Operate(element);
-                    this.tbConsole.Text += "DATA " + element + " is " + 
-                        ((status == Page.STATUS.PAGEFAULT) ? "Page Fault" : status == Page.STATUS.MIGRATION ? "Migrated" : "Hit")
-                        + "\r\n";
-                }
+        private void UpdatePieChart(Core core)
+        {
+            chart1.Series.Clear();
+            Series series = chart1.Series.Add("Statics");
+            series.ChartType = SeriesChartType.Pie;
+            series.IsVisibleInLegend = true;
+            series.Points.AddXY("Hit", core.hit);
+            series.Points.AddXY("Fault", core.fault);
+            series.Points[0].IsValueShownAsLabel = true;
+            series.Points[0].LegendText = $"Hit {core.hit}";
+            series.Points[1].IsValueShownAsLabel = true;
+            series.Points[1].LegendText = $"Fault {core.fault} (Migrated {core.migration})";
+        }
 
                 DrawBase(window, windowSize, data.Length);
                 this.pbPlaceHolder.Refresh();
