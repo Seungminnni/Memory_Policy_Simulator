@@ -327,7 +327,6 @@ namespace Memory_Policy_Simulator
                 {
                     framesNew.Add(p);
                     framesOrder.AddFirst(p);
-                    fault++;
                 }
             }
         }
