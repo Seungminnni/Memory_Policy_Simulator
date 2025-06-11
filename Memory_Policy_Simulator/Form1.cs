@@ -67,7 +67,7 @@ namespace Memory_Policy_Simulator
                     foreach (char t in psudoQueue)
                         DrawGridText(i, depth++, t);                }
             }
-            else // LRU, MFU
+            else if (core.policy == Core.POLICY.LRU || core.policy == Core.POLICY.MFU)
             {
                 // 각 시점의 프레임 상태를 Core의 내부 리스트에서 추적
                 List<char> frameSnapshot = new List<char>();
@@ -177,6 +177,50 @@ namespace Memory_Policy_Simulator
                         DrawGridText(i, k + 1, frameSnapshot[k]);
                 }
             }
+            else // NEW
+            {
+                List<char> frameSnapshot = new List<char>();
+
+                for (int i = 0; i < dataLength; i++)
+                {
+                    var page = core.pageHistory[i];
+                    char data = page.data;
+
+                    if (page.status == Page.STATUS.HIT)
+                    {
+                        frameSnapshot.Remove(data);
+                        frameSnapshot.Insert(0, data);
+                    }
+                    else if (page.status == Page.STATUS.PAGEFAULT)
+                    {
+                        frameSnapshot.Insert(0, data);
+                    }
+                    else if (page.status == Page.STATUS.MIGRATION)
+                    {
+                        if (frameSnapshot.Count >= windowSize)
+                            frameSnapshot.RemoveAt(frameSnapshot.Count - 1);
+                        frameSnapshot.Insert(0, data);
+                    }
+
+                    for (int j = 0; j <= windowSize; j++)
+                    {
+                        if (j == 0)
+                            DrawGridText(i, j, data);
+                        else
+                            DrawGrid(i, j);
+                    }
+
+                    DrawGridHighlight(i, page.loc, page.status);
+                    for (int k = 0; k < frameSnapshot.Count && k < windowSize; k++)
+                        DrawGridText(i, k + 1, frameSnapshot[k]);
+                }
+
+                // ensure final snapshot matches internal state
+                var finalFrames = core.GetCurrentFrames();
+                int row = dataLength - 1;
+                for (int k = 0; k < finalFrames.Count && k < windowSize; k++)
+                    DrawGridText(row, k + 1, finalFrames[k]);
+            }
         }
 
 
@@ -242,46 +286,55 @@ namespace Memory_Policy_Simulator
 
         private void btnOperate_Click(object sender, EventArgs e)
         {
-            this.tbConsole.Clear();            if (this.tbQueryString.Text != "" && this.tbWindowSize.Text != "")
+            this.tbConsole.Clear();
+
+            if (this.tbQueryString.Text != string.Empty && this.tbWindowSize.Text != string.Empty)
             {
                 string data = this.tbQueryString.Text;
-                int windowSize = int.Parse(this.tbWindowSize.Text);
+                int frameSize = int.Parse(this.tbWindowSize.Text);
 
-                /* initalize */
                 Core.POLICY selectedPolicy = Core.POLICY.FIFO;
                 switch (this.comboBox1.Text)
                 {
                     case "FIFO": selectedPolicy = Core.POLICY.FIFO; break;
                     case "LRU":  selectedPolicy = Core.POLICY.LRU;  break;
                     case "MFU":  selectedPolicy = Core.POLICY.MFU;  break;
+                    case "NEW":  selectedPolicy = Core.POLICY.NEW;  break;
                 }
-                var window = new Core(windowSize, selectedPolicy);
+                int phaseWindow = 5;
+                double threshold = 0.5;
+                if (int.TryParse(this.tbPhaseWindow.Text, out int tmpW)) phaseWindow = tmpW;
+                if (double.TryParse(this.tbThreshold.Text, out double tmpT)) threshold = tmpT;                Core sim = new Core(frameSize, selectedPolicy, phaseWindow, threshold, data.ToList());
 
-                foreach ( char element in data )
+                foreach (char element in data)
                 {
-                    var status = window.Operate(element);
-                    this.tbConsole.Text += "DATA " + element + " is " + 
-                        ((status == Page.STATUS.PAGEFAULT) ? "Page Fault" : status == Page.STATUS.MIGRATION ? "Migrated" : "Hit")
-                        + "\r\n";
+                    var status = sim.Operate(element);
+                    this.tbConsole.AppendText(
+                        $"DATA {element} is " +
+                        (status == Page.STATUS.PAGEFAULT ? "Page Fault" : status == Page.STATUS.MIGRATION ? "Migrated" : "Hit") +
+                        "\r\n");
                 }
 
-                DrawBase(window, windowSize, data.Length);
+                DrawBase(sim, frameSize, data.Length);
                 this.pbPlaceHolder.Refresh();
 
-                int total = window.hit + window.fault;
                 /* 차트 생성 */
                 chart1.Series.Clear();
-                Series resultChartContent = chart1.Series.Add("Statics");
+                Series resultChartContent = chart1.Series.Add("Statistics");
                 resultChartContent.ChartType = SeriesChartType.Pie;
                 resultChartContent.IsVisibleInLegend = true;
-                resultChartContent.Points.AddXY("Hit", window.hit);
-                resultChartContent.Points.AddXY("Fault", window.fault);
+                resultChartContent.Points.AddXY("Hit", sim.hit);
+                resultChartContent.Points.AddXY("Fault", sim.fault);
                 resultChartContent.Points[0].IsValueShownAsLabel = true;
-                resultChartContent.Points[0].LegendText = $"Hit {window.hit}";
+                resultChartContent.Points[0].LegendText = $"Hit {sim.hit}";
                 resultChartContent.Points[1].IsValueShownAsLabel = true;
-                resultChartContent.Points[1].LegendText = $"Fault {window.fault} (Migrated {window.migration})";
+                resultChartContent.Points[1].LegendText = $"Fault {sim.fault} (Migrated {sim.migration})";
 
-                this.lbPageFaultRatio.Text = Math.Round(((float)window.fault / total), 2) * 100 + "%";
+                int total = sim.hit + sim.fault;
+                if (total > 0)
+                    this.lbPageFaultRatio.Text = Math.Round(((float)sim.fault / total) * 100, 2) + "%";
+                else
+                    this.lbPageFaultRatio.Text = "0%";
             }
             else
             {
@@ -301,9 +354,27 @@ namespace Memory_Policy_Simulator
         private void tbWindowSize_KeyDown(object sender, KeyEventArgs e)
         {
 
-        }        private void tbWindowSize_KeyPress(object sender, KeyPressEventArgs e)
+        }
+
+        private void tbWindowSize_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (!(Char.IsDigit(e.KeyChar)) && e.KeyChar != 8)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void tbPhaseWindow_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(Char.IsDigit(e.KeyChar)) && e.KeyChar != 8)
+            {
+                e.Handled = true;
+            }
+        }
+
+        private void tbThreshold_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            if (!(char.IsDigit(e.KeyChar) || e.KeyChar == '.' || e.KeyChar == 8))
             {
                 e.Handled = true;
             }
@@ -325,6 +396,22 @@ namespace Memory_Policy_Simulator
         private void btnSave_Click(object sender, EventArgs e)
         {
             bResultImage.Save("./result.jpg");
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (this.comboBox1.Text == "NEW")
+            {
+                if (string.IsNullOrWhiteSpace(this.tbPhaseWindow.Text))
+                    this.tbPhaseWindow.Text = "5";
+                if (string.IsNullOrWhiteSpace(this.tbThreshold.Text))
+                    this.tbThreshold.Text = "3";
+            }
+            else
+            {
+                this.tbPhaseWindow.Text = string.Empty;
+                this.tbThreshold.Text = string.Empty;
+            }
         }
     }
 }
