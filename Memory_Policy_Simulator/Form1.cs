@@ -286,12 +286,13 @@ namespace Memory_Policy_Simulator
 
         private void btnOperate_Click(object sender, EventArgs e)
         {
-            this.tbConsole.Clear();            if (this.tbQueryString.Text != "" && this.tbWindowSize.Text != "")
+            this.tbConsole.Clear();
+
+            if (this.tbQueryString.Text != string.Empty && this.tbWindowSize.Text != string.Empty)
             {
                 string data = this.tbQueryString.Text;
-                int windowSize = int.Parse(this.tbWindowSize.Text);
+                int frameSize = int.Parse(this.tbWindowSize.Text);
 
-                /* initalize */
                 Core.POLICY selectedPolicy = Core.POLICY.FIFO;
                 switch (this.comboBox1.Text)
                 {
@@ -300,24 +301,26 @@ namespace Memory_Policy_Simulator
                     case "MFU":  selectedPolicy = Core.POLICY.MFU;  break;
                     case "NEW":  selectedPolicy = Core.POLICY.NEW;  break;
                 }
-                int w = 5;
-                UpdatePieChart(window);
+                int phaseWindow = 5;
+                double threshold = 0.5;
+                if (int.TryParse(this.tbPhaseWindow.Text, out int tmpW)) phaseWindow = tmpW;
+                if (double.TryParse(this.tbThreshold.Text, out double tmpT)) threshold = tmpT;
 
-        private void UpdatePieChart(Core core)
-        {
-            chart1.Series.Clear();
-            Series series = chart1.Series.Add("Statics");
-            series.ChartType = SeriesChartType.Pie;
-            series.IsVisibleInLegend = true;
-            series.Points.AddXY("Hit", core.hit);
-            series.Points.AddXY("Fault", core.fault);
-            series.Points[0].IsValueShownAsLabel = true;
-            series.Points[0].LegendText = $"Hit {core.hit}";
-            series.Points[1].IsValueShownAsLabel = true;
-            series.Points[1].LegendText = $"Fault {core.fault} (Migrated {core.migration})";
-        }
+                Core sim = new Core(frameSize, selectedPolicy, phaseWindow, threshold, data.ToList());
 
-                DrawBase(window, windowSize, data.Length);
+                foreach (char element in data)
+                    var status = sim.Operate(element);
+                    this.tbConsole.AppendText(
+                        $"DATA {element} is " +
+                        (status == Page.STATUS.PAGEFAULT ? "Page Fault" : status == Page.STATUS.MIGRATION ? "Migrated" : "Hit") +
+                        "\r\n");
+                DrawBase(sim, frameSize, data.Length);
+                UpdatePieChart(sim);
+                int total = sim.hit + sim.fault;
+                if (total > 0)
+                    this.lbPageFaultRatio.Text = Math.Round(((float)sim.fault / total) * 100, 2) + "%";
+                else
+                    this.lbPageFaultRatio.Text = "0%";
                 this.pbPlaceHolder.Refresh();
 
                 int total = window.hit + window.fault;
