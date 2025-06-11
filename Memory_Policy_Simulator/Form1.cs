@@ -304,39 +304,37 @@ namespace Memory_Policy_Simulator
                 int phaseWindow = 5;
                 double threshold = 0.5;
                 if (int.TryParse(this.tbPhaseWindow.Text, out int tmpW)) phaseWindow = tmpW;
-                if (double.TryParse(this.tbThreshold.Text, out double tmpT)) threshold = tmpT;
-
-                Core sim = new Core(frameSize, selectedPolicy, phaseWindow, threshold, data.ToList());
+                if (double.TryParse(this.tbThreshold.Text, out double tmpT)) threshold = tmpT;                Core sim = new Core(frameSize, selectedPolicy, phaseWindow, threshold, data.ToList());
 
                 foreach (char element in data)
+                {
                     var status = sim.Operate(element);
                     this.tbConsole.AppendText(
                         $"DATA {element} is " +
                         (status == Page.STATUS.PAGEFAULT ? "Page Fault" : status == Page.STATUS.MIGRATION ? "Migrated" : "Hit") +
                         "\r\n");
+                }
+
                 DrawBase(sim, frameSize, data.Length);
-                UpdatePieChart(sim);
+                this.pbPlaceHolder.Refresh();
+
+                /* 차트 생성 */
+                chart1.Series.Clear();
+                Series resultChartContent = chart1.Series.Add("Statistics");
+                resultChartContent.ChartType = SeriesChartType.Pie;
+                resultChartContent.IsVisibleInLegend = true;
+                resultChartContent.Points.AddXY("Hit", sim.hit);
+                resultChartContent.Points.AddXY("Fault", sim.fault);
+                resultChartContent.Points[0].IsValueShownAsLabel = true;
+                resultChartContent.Points[0].LegendText = $"Hit {sim.hit}";
+                resultChartContent.Points[1].IsValueShownAsLabel = true;
+                resultChartContent.Points[1].LegendText = $"Fault {sim.fault} (Migrated {sim.migration})";
+
                 int total = sim.hit + sim.fault;
                 if (total > 0)
                     this.lbPageFaultRatio.Text = Math.Round(((float)sim.fault / total) * 100, 2) + "%";
                 else
                     this.lbPageFaultRatio.Text = "0%";
-                this.pbPlaceHolder.Refresh();
-
-                int total = window.hit + window.fault;
-                /* 차트 생성 */
-                chart1.Series.Clear();
-                Series resultChartContent = chart1.Series.Add("Statics");
-                resultChartContent.ChartType = SeriesChartType.Pie;
-                resultChartContent.IsVisibleInLegend = true;
-                resultChartContent.Points.AddXY("Hit", window.hit);
-                resultChartContent.Points.AddXY("Fault", window.fault);
-                resultChartContent.Points[0].IsValueShownAsLabel = true;
-                resultChartContent.Points[0].LegendText = $"Hit {window.hit}";
-                resultChartContent.Points[1].IsValueShownAsLabel = true;
-                resultChartContent.Points[1].LegendText = $"Fault {window.fault} (Migrated {window.migration})";
-
-                this.lbPageFaultRatio.Text = Math.Round(((float)window.fault / total), 2) * 100 + "%";
             }
             else
             {
