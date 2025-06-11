@@ -85,7 +85,7 @@
             this.tbPhaseWindow.Name = "tbPhaseWindow";
             this.tbPhaseWindow.Size = new System.Drawing.Size(80, 34);
             this.tbPhaseWindow.TabIndex = 9;
-            this.tbPhaseWindow.Text = "1000";
+            this.tbPhaseWindow.Text = "";
             this.tbPhaseWindow.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tbPhaseWindow_KeyPress);
             //
             // tbThreshold
@@ -96,7 +96,7 @@
             this.tbThreshold.Name = "tbThreshold";
             this.tbThreshold.Size = new System.Drawing.Size(50, 34);
             this.tbThreshold.TabIndex = 10;
-            this.tbThreshold.Text = "50";
+            this.tbThreshold.Text = "";
             this.tbThreshold.KeyPress += new System.Windows.Forms.KeyPressEventHandler(this.tbThreshold_KeyPress);
             // 
             // tbQueryString
@@ -185,6 +185,7 @@
             this.comboBox1.TabIndex = 8;
             this.comboBox1.SelectedIndex = 0;
             this.comboBox1.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.comboBox1.SelectedIndexChanged += new System.EventHandler(this.comboBox1_SelectedIndexChanged);
             // 
             // label1
             // 

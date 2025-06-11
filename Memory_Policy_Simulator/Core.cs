@@ -31,10 +31,10 @@ namespace Memory_Policy_Simulator
         private Dictionary<int, int> histPrev;      // 이전 히스토그램
         private List<char> refString;               // 전체 참조열
         private int phaseWindow;
-        private int thresholdT;
+        private double thresholdT;
         private int index;
 
-        public Core(int get_frame_size, POLICY policy = POLICY.FIFO, int phaseWindow = 1000, int thresholdT = 50, List<char> refString = null)
+        public Core(int get_frame_size, POLICY policy = POLICY.FIFO, int phaseWindow = 1000, double thresholdT = 50, List<char> refString = null)
         {
             this.p_frame_size = get_frame_size;
             this.policy = policy;

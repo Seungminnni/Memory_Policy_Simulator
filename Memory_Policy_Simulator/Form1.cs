@@ -294,10 +294,10 @@ namespace Memory_Policy_Simulator
                     case "MFU":  selectedPolicy = Core.POLICY.MFU;  break;
                     case "NEW":  selectedPolicy = Core.POLICY.NEW;  break;
                 }
-                int w = 1000;
-                int t = 50;
+                int w = 5;
+                double t = 0.5;
                 if (int.TryParse(this.tbPhaseWindow.Text, out int tmpW)) w = tmpW;
-                if (int.TryParse(this.tbThreshold.Text, out int tmpT)) t = tmpT;
+                if (double.TryParse(this.tbThreshold.Text, out double tmpT)) t = tmpT;
                 var window = new Core(windowSize, selectedPolicy, w, t, data.ToList());
 
                 foreach ( char element in data )
@@ -364,7 +364,7 @@ namespace Memory_Policy_Simulator
 
         private void tbThreshold_KeyPress(object sender, KeyPressEventArgs e)
         {
-            if (!(Char.IsDigit(e.KeyChar)) && e.KeyChar != 8)
+            if (!(char.IsDigit(e.KeyChar) || e.KeyChar == '.' || e.KeyChar == 8))
             {
                 e.Handled = true;
             }
@@ -386,6 +386,22 @@ namespace Memory_Policy_Simulator
         private void btnSave_Click(object sender, EventArgs e)
         {
             bResultImage.Save("./result.jpg");
+        }
+
+        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (this.comboBox1.Text == "NEW")
+            {
+                if (string.IsNullOrWhiteSpace(this.tbPhaseWindow.Text))
+                    this.tbPhaseWindow.Text = "5";
+                if (string.IsNullOrWhiteSpace(this.tbThreshold.Text))
+                    this.tbThreshold.Text = "0.5";
+            }
+            else
+            {
+                this.tbPhaseWindow.Text = string.Empty;
+                this.tbThreshold.Text = string.Empty;
+            }
         }
     }
 }
