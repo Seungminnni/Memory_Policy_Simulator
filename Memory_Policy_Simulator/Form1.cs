@@ -300,11 +300,10 @@ namespace Memory_Policy_Simulator
                     case "LRU":  selectedPolicy = Core.POLICY.LRU;  break;
                     case "MFU":  selectedPolicy = Core.POLICY.MFU;  break;
                     case "NEW":  selectedPolicy = Core.POLICY.NEW;  break;
-                }
-                int phaseWindow = 5;
-                double threshold = 0.5;
+                }                int phaseWindow = 3;
+                double threshold = 2.0;
                 if (int.TryParse(this.tbPhaseWindow.Text, out int tmpW)) phaseWindow = tmpW;
-                if (double.TryParse(this.tbThreshold.Text, out double tmpT)) threshold = tmpT;                Core sim = new Core(frameSize, selectedPolicy, phaseWindow, threshold, data.ToList());
+                if (double.TryParse(this.tbThreshold.Text, out double tmpT)) threshold = tmpT;Core sim = new Core(frameSize, selectedPolicy, phaseWindow, threshold, data.ToList());
 
                 foreach (char element in data)
                 {
@@ -396,16 +395,14 @@ namespace Memory_Policy_Simulator
         private void btnSave_Click(object sender, EventArgs e)
         {
             bResultImage.Save("./result.jpg");
-        }
-
-        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
+        }        private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (this.comboBox1.Text == "NEW")
             {
                 if (string.IsNullOrWhiteSpace(this.tbPhaseWindow.Text))
-                    this.tbPhaseWindow.Text = "5";
+                    this.tbPhaseWindow.Text = "3";
                 if (string.IsNullOrWhiteSpace(this.tbThreshold.Text))
-                    this.tbThreshold.Text = "3";
+                    this.tbThreshold.Text = "2";
             }
             else
             {
